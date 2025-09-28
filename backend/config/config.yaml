@@ -1,0 +1,20 @@
+weaviate:
+  host: ${WEAVIATE_HOST}
+  port: ${WEAVIATE_PORT}
+  grpc_port: ${WEAVIATE_GRPC_PORT}
+  collection_name: doc
+
+ingestion:
+  run: True
+  path: data/data.csv
+
+embedders:
+  hugging_face: 
+    model_name: msmarco-MiniLM-L6-cos-v5
+
+postgres:
+  user: ${POSTGRES_USER}
+  password: ${POSTGRES_PASSWORD}
+  host: ${POSTGRES_HOST}
+  port: ${POSTGRES_PORT}
+  dbname: ${POSTGRES_DB}
