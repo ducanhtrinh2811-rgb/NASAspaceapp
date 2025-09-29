@@ -27,6 +27,9 @@ class SqlDB:
     def create_category(self, name: str):
         db = self.get_session()
         try:
+            category = db.query(Category).filter_by(name=name).first()
+            if category:
+                return category
             category = Category(name=name)
             db.add(category)
             db.commit()
@@ -62,6 +65,9 @@ class SqlDB:
     def create_keyword(self, name: str):
         db = self.get_session()
         try:
+            keyword = db.query(Keyword).filter_by(name=name).first()
+            if keyword:
+                return keyword
             keyword = Keyword(name=name)
             db.add(keyword)
             db.commit()
