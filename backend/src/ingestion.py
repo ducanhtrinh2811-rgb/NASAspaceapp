@@ -37,7 +37,7 @@ class Ingestion:
             if not keys or pd.isna(keys):
                 keys = []
             else:
-                keys = keys.split(',')
+                keys = [k.strip() for k in keys.split(',')]
             keywords.update(keys)
         keywords = list(keywords)
         keyword_map = {}
@@ -55,6 +55,10 @@ class Ingestion:
             keywords = row.keywords
             if not keywords or pd.isna(keywords):
                 keywords = []
+            else:
+                keywords = set([key.strip() for key in keywords.split(',')])
+                keywords = list(keywords)
+                
             keyword_ids = [keyword_map[key] for key in keywords]
 
 

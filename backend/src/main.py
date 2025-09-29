@@ -42,10 +42,10 @@ class SearchRequest(BaseModel):
 @app.post('/search')
 def search_documents(body: SearchRequest):
     try:
-        query_vector = embedder.embed(body['query'])
+        query_vector = embedder.embed(body.query)
         doc_ids = vectorstore.similarity_search(
             query_vector=query_vector,
-            k=body['limit']
+            k=body.limit
         )
         docs = db.get_documents_by_ids(doc_ids)
         return {
