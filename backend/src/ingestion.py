@@ -1,4 +1,4 @@
-from .config import LLM_CONFIG, INGESTION_CONFIG
+from .config import INGESTION_CONFIG
 import requests
 import pandas as pd
 from .sql_db import SqlDB

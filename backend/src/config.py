@@ -40,5 +40,3 @@ INGESTION_CONFIG = config['ingestion']
 HUGGING_FACE_MODEL_NAME = config['embedders']['hugging_face']['model_name']
 
 POSTGRES_CONFIG = config['postgres']
-
-LLM_CONFIG = config['llm']
