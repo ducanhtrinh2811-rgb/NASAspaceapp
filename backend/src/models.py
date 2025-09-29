@@ -32,4 +32,5 @@ class Document(Base):
     link = Column(String, nullable=False)
     category_id = Column(Integer, ForeignKey('categories.id'))
 
+    category = relationship('Category', back_populates='documents')
     keywords = relationship('Keyword', secondary=document_keywords, back_populates='documents')

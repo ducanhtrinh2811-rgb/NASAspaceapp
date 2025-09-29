@@ -25,62 +25,83 @@ class SqlDB:
         return self.SessionLocal()
 
     def create_category(self, name: str):
-        with self.get_session() as db:
+        db = self.get_session()
+        try:
             category = Category(name=name)
             db.add(category)
             db.commit()
             db.refresh(category)
             return category
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
     
     def get_category_by_name(self, name: str):
-        with self.get_session() as db:
-            cat = db.query(Category).filter_by(name=name).first()
-            if cat:
-                return cat
-            return None
+        db = self.get_session()
+        try:
+            return db.query(Category).filter_by(name=name).first()
+        finally:
+            db.close()
     
     def get_categories(self):
-        with self.get_session() as db:
+        db = self.get_session()
+        try:
             return db.query(Category).all()
+        finally:
+            db.close()
     
     def get_category_by_id(self, id: int):
-        with self.get_session() as db:
-            cat = db.query(Category).filter_by(id=id).first()
-            if cat:
-                return cat
-            return None
+        db = self.get_session()
+        try:
+            return db.query(Category).filter_by(id=id).first()
+        finally:
+            db.close()
 
     def create_keyword(self, name: str):
-        with self.get_session() as db:
+        db = self.get_session()
+        try:
             keyword = Keyword(name=name)
             db.add(keyword)
             db.commit()
             db.refresh(keyword)
             return keyword
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
     
     def get_keyword_by_name(self, name: str):
-        with self.get_session() as db:
-            keyword = db.query(Keyword).filter_by(name=name).first()
-            if keyword:
-                return keyword
-            return None
+        db = self.get_session()
+        try:
+            return db.query(Keyword).filter_by(name=name).first()
+        finally:
+            db.close()
     
     def get_keywords(self):
-        with self.get_session() as db:
+        db = self.get_session()
+        try:
             return db.query(Keyword).all()
+        finally:
+            db.close()
 
     def get_keyword_by_id(self, id: int):
-        with self.get_session() as db:
-            keyword = db.query(Keyword).filter_by(id=id).first()
-            if keyword:
-                return keyword
-            return None
+        db = self.get_session()
+        try:
+            return db.query(Keyword).filter_by(id=id).first()
+        finally:
+            db.close()
     def get_keywords_by_ids(self, ids: List[int]):
-        with self.get_session() as db:
+        db = self.get_session()
+        try:
             keywords = db.query(Keyword).filter(Keyword.id.in_(ids)).all()
             if len(keywords) != len(ids):
                 return None
             return keywords
+        finally:
+            db.close()
 
 
 
@@ -92,33 +113,43 @@ class SqlDB:
         category_id: int,
         keyword_ids: List[int]
     ):
-        with self.get_session() as db:
-            category = self.get_category_by_id(category_id)
+        db = self.get_session()
+        try:
+            category = db.query(Category).filter_by(id=category_id).first()
             if not category:
                 return None
-            keywords = self.get_keywords_by_ids(keyword_ids)
-            if not keywords:
+
+            keywords = db.query(Keyword).filter(Keyword.id.in_(keyword_ids)).all()
+            if len(keywords) != len(keyword_ids):
                 return None
+
             doc = Document(
-                title=title, 
-                summary=summary, 
-                link=link, 
-                category_id=category.id,
+                title=title,
+                summary=summary,
+                link=link,
+                category=category,
                 keywords=keywords
             )
             db.add(doc)
             db.commit()
             db.refresh(doc)
             return doc
+        except Exception:
+            db.rollback()
+            raise
+        finally:
+            db.close()
         
     def get_documents_by_category(self, category_id: int):
-        with self.get_session() as db:
-            return db.query(Document) \
-                .filter(Document.category_id == category_id) \
-                .all()
+        db = self.get_session()
+        try:
+            return db.query(Document).filter(Document.category_id == category_id).all()
+        finally:
+            db.close()
     
     def get_documents_by_ids(self, ids: List[int]):
-        with self.get_session() as db:
-            return db.query(Document) \
-                .filter(Document.id.in_(ids)) \
-                .all()
+        db = self.get_session()
+        try:
+            return db.query(Document).filter(Document.id.in_(ids)).all()
+        finally:
+            db.close()
