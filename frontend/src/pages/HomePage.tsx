@@ -1,200 +1,200 @@
-import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Document } from "../types";
-import { getCategories } from "../services/CategoryService";
-import { getDocumentsByCategory, searchDocuments } from "../services/DocumentService";
-import { useHomeState } from "../contexts/HomeStateContext";
+import { useState } from "react";
+import { Footer } from "../components/Footer";
+import { BackToTopButton } from "../components/BackToTopButton";
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showTopics, setShowTopics] = useState(false);
 
-  // Sử dụng context để lưu state toàn cục cho HomePage
-  const {
-    categories,
-    searchQuery,
-    searchResults,
-    isSearching,
-    setCategories,
-    setSearchQuery,
-    setSearchResults,
-    setIsSearching
-  } = useHomeState();
-
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        // Chỉ fetch khi categories trống
-        if (categories.length === 0) {
-          const cats = await getCategories();
-          setCategories(cats);
-        }
-      } catch (err) {
-        console.error("Failed to load categories:", err);
-      }
-    };
-    fetchCategories();
-  }, [categories.length, setCategories]);
-
-  const handleSearch = async (e: React.FormEvent) => {
+  const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const query = searchQuery.trim();
-
-    if (!query) {
-      setIsSearching(false);
-      setSearchResults([]);
-      return;
-    }
-
-    setIsSearching(true);
-    setLoading(true);
-
-    try {
-      const results = await searchDocuments({ query, limit: 100 });
-      setSearchResults(results);
-    } catch (err) {
-      console.error("Search failed:", err);
-      setSearchResults([]);
-    } finally {
-      setLoading(false);
+    if (searchQuery.trim()) {
+      navigate(`/article?query=${encodeURIComponent(searchQuery)}`);
     }
   };
 
-  const handleCategoryClick = async (catId: number) => {
-    setIsSearching(true);
-    setLoading(true);
-    try {
-      const docs = await getDocumentsByCategory(catId);
-      setSearchResults(docs);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleDocumentClick = (doc: Document) => {
-    // Chỉ navigate sang ArticlePage, không cần truyền state
-    navigate(`/article?url=${encodeURIComponent(doc.link)}`);
-  };
+  const topics = [
+    { id: 1, key: "vertebrate", name: "Vertebrate", emoji: "🦴" },
+    { id: 2, key: "plants", name: "Plants", emoji: "🌱" },
+    { id: 3, key: "microbes", name: "Microbes", emoji: "🦠" },
+    { id: 4, key: "fungi", name: "Fungi", emoji: "🍄" },
+    { id: 5, key: "human-cell", name: "Human Cell & Biomedical", emoji: "🧪" },
+    { id: 6, key: "systems-biology", name: "Systems Biology & Tools", emoji: "💻" },
+  ];
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex flex-col items-center p-4">
-      <h1 className="text-3xl font-extrabold text-gray-800 mt-8 mb-6">
-        Document Search
-      </h1>
-
-      {/* Search Bar */}
-      <form
-        onSubmit={handleSearch}
-        className={`transition-all duration-500 rounded-xl shadow-lg border-2 border-transparent focus-within:border-blue-400 ${
-          isSearching ? "mt-6 w-full max-w-md" : "mt-20 w-full max-w-xl"
-        }`}
-      >
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={
-            isSearching
-              ? "Search..."
-              : "Enter keywords to search documents..."
-          }
-          className={`w-full px-5 py-3 text-gray-700 bg-white rounded-xl focus:outline-none transition-all duration-500 placeholder-gray-400 ${
-            isSearching ? "text-base py-2" : "text-xl py-4 shadow-xl"
-          }`}
-        />
-      </form>
-
-      {/* Categories */}
-      {!isSearching && (
-        <div className="flex flex-col items-center justify-center flex-1 space-y-4 mt-20">
-          <h2 className="text-2xl font-semibold text-gray-600 mb-4">
-            Browse by Category
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-2xl">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => handleCategoryClick(cat.id)}
-                className="w-56 bg-white py-4 px-6 rounded-xl shadow-md border border-gray-200 hover:shadow-xl hover:bg-blue-50 hover:border-blue-300 transition-all transform hover:scale-105 font-medium text-gray-700 text-lg"
-              >
-                {cat.name}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Search / Category Results */}
-      {isSearching && (
-        <div className="flex flex-col items-center mt-6 w-full">
-          <div className="flex flex-wrap justify-center gap-2 mt-4 max-w-xl">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => handleCategoryClick(cat.id)}
-                className="bg-white px-3 py-1 rounded-full shadow-sm border border-gray-200 hover:bg-blue-100 transition text-sm font-medium text-gray-700"
-              >
-                {cat.name}
-              </button>
-            ))}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">
+      {/* ✅ NavBar */}
+      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow">
+        <div className="container mx-auto px-6 py-2 flex items-center justify-between">
+          {/* Logo */}
+          <div
+            onClick={() => navigate("/")}
+            className="flex items-center font-bold text-lg text-blue-600 cursor-pointer"
+          >
+            🚀 AstroMorphosis
           </div>
 
-          {loading && (
-            <div className="mt-8 flex items-center space-x-2 text-blue-500">
-              <svg
-                className="animate-spin h-5 w-5"
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
+          {/* SearchBar */}
+          <form onSubmit={handleSearch} className="relative flex-1 mx-4 max-w-md">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search..."
+              className="w-full px-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+            />
+            <button
+              type="submit"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600"
+            >
+              🔍
+            </button>
+          </form>
+
+          {/* Nav links */}
+          <nav className="flex items-center space-x-4 text-sm font-medium text-gray-700">
+            <button onClick={() => navigate("/")} className="hover:text-blue-600">
+              Home
+            </button>
+
+            {/* Dropdown cho Topics */}
+            <div className="relative">
+              <button
+                onClick={() => setShowTopics(!showTopics)}
+                className="hover:text-blue-600 flex items-center space-x-1"
               >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              <p>Loading results...</p>
+                <span>Topics</span>
+                <span className={`transform transition ${showTopics ? "rotate-180" : ""}`}>
+                  ▼
+                </span>
+              </button>
+
+              {showTopics && (
+                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200">
+                  <ul className="py-2">
+                    {topics.map((topic) => (
+                      <li
+                        key={topic.id}
+                        onClick={() => {
+                          navigate(`/topic/${topic.id}`);
+                          setShowTopics(false);
+                        }}
+                        className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex items-center space-x-2"
+                      >
+                        <span>{topic.emoji}</span>
+                        <span>{topic.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
-          )}
 
-          {!loading && searchResults.length > 0 && (
-            <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8 w-full max-w-6xl">
-              {searchResults.map((doc) => (
-                <li
-                  key={doc.id}
-                  onClick={() => handleDocumentClick(doc)}
-                  className="cursor-pointer bg-white p-6 rounded-xl shadow-lg border-t-4 border-blue-500 hover:shadow-xl transition transform hover:-translate-y-1"
-                >
-                  <h3 className="font-bold text-xl text-gray-800 mb-2">
-                    {doc.title}
-                  </h3>
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-3">
-                    {doc.summary}
-                  </p>
-                  <div className="text-blue-500 hover:text-blue-600 hover:underline mt-2 inline-flex items-center space-x-1 font-medium">
-                    <span>View document</span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+            <button
+              onClick={() => document.getElementById("about")?.scrollIntoView({ behavior: "smooth" })}
+              className="hover:text-blue-600"
+            >
+              About
+            </button>
 
-          {!loading && searchResults.length === 0 && (
-            <p className="mt-8 text-gray-500 text-lg">
-              No documents found matching your criteria.
-            </p>
-          )}
+            <button
+              onClick={() => document.getElementById("feedback")?.scrollIntoView({ behavior: "smooth" })}
+              className="hover:text-blue-600"
+            >
+              Feedback
+            </button>
+          </nav>
         </div>
-      )}
+      </header>
+
+      {/* Website Title */}
+      <section className="py-16 text-center">
+        <div className="container mx-auto px-6">
+          <h1 className="text-6xl font-bold text-gray-900 mb-4 tracking-tight">
+            AstroMorphosis
+          </h1>
+          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            Exploring biological transformations in space environments through cutting-edge research
+          </p>
+        </div>
+      </section>
+
+      {/* Topics Section */}
+      <section id="topics" className="py-20 container mx-auto px-6">
+        <h2 className="text-4xl font-bold text-center mb-12">Topics</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {topics.map((topic) => (
+            <div
+              key={topic.id}
+              onClick={() => navigate(`/topic/${topic.id}`)}
+              className="cursor-pointer bg-white p-8 rounded-2xl shadow-lg flex flex-col items-center hover:scale-105 transition"
+            >
+              <div className="text-5xl mb-4">{topic.emoji}</div>
+              <h3 className="text-lg font-bold text-gray-800">{topic.name}</h3>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* About Section */}
+      <section id="about" className="py-16 bg-gray-50">
+        <div className="container mx-auto px-6">
+          <div className="max-w-4xl mx-auto text-center">
+            <h2 className="text-4xl font-bold text-gray-900 mb-8">About Us</h2>
+            <div className="bg-white rounded-xl p-8 shadow-lg">
+              <p className="text-lg text-gray-700 leading-relaxed mb-6">
+                We are a team from <strong>Hanoi University of Science and Technology</strong>, joining the 
+                <strong> NASA Space Apps Challenge 2025</strong>. Our mission is to advance our understanding 
+                of biological systems in space environments through innovative research and collaborative knowledge sharing.
+              </p>
+              <p className="text-xl font-semibold text-blue-600">
+                "SHARE TO BE SHARED"
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Feedback Section */}
+      <section id="feedback" className="py-16 bg-white">
+        <div className="container mx-auto px-6">
+          <div className="max-w-4xl mx-auto">
+            <h2 className="text-4xl font-bold text-gray-900 text-center mb-12">Share Your Thoughts</h2>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div className="bg-blue-50 rounded-xl p-6">
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold">A</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Anonymous Researcher</h4>
+                    <p className="text-gray-700 mt-2">"The website is so beautiful. Amazing work on presenting complex space biology research in such an accessible way!"</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="bg-green-50 rounded-xl p-6">
+                <div className="flex items-start space-x-4">
+                  <div className="w-12 h-12 bg-green-600 rounded-full flex items-center justify-center">
+                    <span className="text-white font-bold">S</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Space Biology Student</h4>
+                    <p className="text-gray-700 mt-2">"This platform makes cutting-edge research so much more understandable. Great resource for the scientific community!"</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <Footer />
+      <BackToTopButton />
     </div>
   );
 }

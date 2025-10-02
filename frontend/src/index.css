@@ -39,3 +39,7 @@ div::-webkit-scrollbar-thumb {
   background-color: yellow;
   border-radius: 2px;
 }
+
+html {
+  scroll-behavior: smooth;
+}
