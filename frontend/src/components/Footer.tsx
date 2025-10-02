@@ -77,7 +77,7 @@ export function Footer() {
               rel="noopener noreferrer"
               className="transition-transform duration-300 hover:scale-110"
             >
-              <img src="/images/neromind.png" alt="Neromind" className="h-16 w-auto" />
+              <img src="/images/neromind.png" alt="Neromind" className="h-20 w-auto" />
             </a>
             <a
               href="https://www.facebook.com/share/19nW9Xn6p7/?mibextid=wwXIfr"
@@ -85,7 +85,7 @@ export function Footer() {
               rel="noopener noreferrer"
               className="transition-transform duration-300 hover:scale-110"
             >
-              <img src="/images/src.jpg" alt="SRC" className="h-16 w-auto" />
+              <img src="/images/src.jpg" alt="SRC" className="h-20 w-auto" />
             </a>
             <a
               href="https://www.facebook.com/profile.php?id=61576561960061"
@@ -93,7 +93,7 @@ export function Footer() {
               rel="noopener noreferrer"
               className="transition-transform duration-300 hover:scale-110"
             >
-              <img src="/images/minitech.jpg" alt="MiniTech" className="h-16 w-auto" />
+              <img src="/images/minitech.jpg" alt="MiniTech" className="h-20 w-auto" />
             </a>
           </div>
 

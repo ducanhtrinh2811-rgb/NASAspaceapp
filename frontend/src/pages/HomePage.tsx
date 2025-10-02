@@ -4,123 +4,128 @@ import { Footer } from "../components/Footer";
 import { BackToTopButton } from "../components/BackToTopButton";
 
 export default function HomePage() {
-  const navigate = useNavigate();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [showTopics, setShowTopics] = useState(false);
+    const navigate = useNavigate();
+    const [searchQuery, setSearchQuery] = useState("");
+    const [showTopics, setShowTopics] = useState(false);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/article?query=${encodeURIComponent(searchQuery)}`);
-    }
-  };
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (searchQuery.trim()) {
+            navigate(`/article?query=${encodeURIComponent(searchQuery)}`);
+        }
+    };
 
-  const topics = [
-    { id: 1, key: "vertebrate", name: "Vertebrate", emoji: "🦴" },
-    { id: 2, key: "plants", name: "Plants", emoji: "🌱" },
-    { id: 3, key: "microbes", name: "Microbes", emoji: "🦠" },
-    { id: 4, key: "fungi", name: "Fungi", emoji: "🍄" },
-    { id: 5, key: "human-cell", name: "Human Cell & Biomedical", emoji: "🧪" },
-    { id: 6, key: "systems-biology", name: "Systems Biology & Tools", emoji: "💻" },
-  ];
+    const topics = [
+        { id: 1, key: "vertebrate", name: "Vertebrate", emoji: "🦴" },
+        { id: 2, key: "plants", name: "Plants", emoji: "🌱" },
+        { id: 3, key: "microbes", name: "Microbes", emoji: "🦠" },
+        { id: 4, key: "fungi", name: "Fungi", emoji: "🍄" },
+        { id: 5, key: "human-cell", name: "Human Cell & Biomedical", emoji: "🧪" },
+        { id: 6, key: "systems-biology", name: "Systems Biology & Tools", emoji: "💻" },
+    ];
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">
-      {/* ✅ NavBar */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow">
-        <div className="container mx-auto px-6 py-2 flex items-center justify-between">
-          {/* Logo */}
-          <div
-            onClick={() => navigate("/")}
-            className="flex items-center font-bold text-lg text-blue-600 cursor-pointer"
-          >
-            🚀 AstroMorphosis
-          </div>
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex flex-col">
 
-          {/* SearchBar */}
-          <form onSubmit={handleSearch} className="relative flex-1 mx-4 max-w-md">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search..."
-              className="w-full px-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-            />
-            <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600"
-            >
-              🔍
-            </button>
-          </form>
+            {/* ✅ NavBar (Logo trái, Search giữa, Links phải) */}
+            <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-200 shadow">
+                <div className="container mx-auto px-6 py-3 flex items-center justify-between">
 
-          {/* Nav links */}
-          <nav className="flex items-center space-x-4 text-sm font-medium text-gray-700">
-            <button onClick={() => navigate("/")} className="hover:text-blue-600">
-              Home
-            </button>
+                    {/* Logo */}
+                    <div
+                        onClick={() => navigate("/")}
+                        className="flex items-center space-x-2 cursor-pointer"
+                    >
+                        <img src="/images/logo.png" alt="Logo" className="h-10 w-10" />
+                        <span className="text-xl font-bold text-blue-600">AstroMorphosis</span>
+                    </div>
 
-            {/* Dropdown cho Topics */}
-            <div className="relative">
-              <button
-                onClick={() => setShowTopics(!showTopics)}
-                className="hover:text-blue-600 flex items-center space-x-1"
-              >
-                <span>Topics</span>
-                <span className={`transform transition ${showTopics ? "rotate-180" : ""}`}>
-                  ▼
-                </span>
-              </button>
+                    {/* SearchBar ở giữa */}
+                    <form
+                        onSubmit={handleSearch}
+                        className="relative flex-1 mx-8 max-w-lg"
+                    >
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search..."
+                            className="w-full px-4 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                        />
+                        <button
+                            type="submit"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600"
+                        >
+                            🔍
+                        </button>
+                    </form>
 
-              {showTopics && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200">
-                  <ul className="py-2">
-                    {topics.map((topic) => (
-                      <li
-                        key={topic.id}
-                        onClick={() => {
-                          navigate(`/topic/${topic.id}`);
-                          setShowTopics(false);
-                        }}
-                        className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex items-center space-x-2"
-                      >
-                        <span>{topic.emoji}</span>
-                        <span>{topic.name}</span>
-                      </li>
-                    ))}
-                  </ul>
+                    {/* Nav Links */}
+                    <nav className="flex items-center space-x-4 text-sm font-medium text-gray-700">
+                        <button onClick={() => navigate("/")} className="hover:text-blue-600">
+                            Home
+                        </button>
+
+                        {/* Dropdown Topics */}
+                        <div className="relative">
+                            <button
+                                onClick={() => setShowTopics(!showTopics)}
+                                className="hover:text-blue-600 flex items-center space-x-1"
+                            >
+                                <span>Topics</span>
+                                <span className={`transform transition ${showTopics ? "rotate-180" : ""}`}>
+                                    ▼
+                                </span>
+                            </button>
+
+                            {showTopics && (
+                                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200">
+                                    <ul className="py-2">
+                                        {topics.map((topic) => (
+                                            <li
+                                                key={topic.id}
+                                                onClick={() => {
+                                                    navigate(`/topic/${topic.id}`);
+                                                    setShowTopics(false);
+                                                }}
+                                                className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex items-center space-x-2"
+                                            >
+                                                <span>{topic.emoji}</span>
+                                                <span>{topic.name}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => document.getElementById("about")?.scrollIntoView({ behavior: "smooth" })}
+                            className="hover:text-blue-600"
+                        >
+                            About
+                        </button>
+
+                        <button
+                            onClick={() => document.getElementById("feedback")?.scrollIntoView({ behavior: "smooth" })}
+                            className="hover:text-blue-600"
+                        >
+                            Feedback
+                        </button>
+                    </nav>
                 </div>
-              )}
-            </div>
+            </header>
 
-            <button
-              onClick={() => document.getElementById("about")?.scrollIntoView({ behavior: "smooth" })}
-              className="hover:text-blue-600"
-            >
-              About
-            </button>
+            {/* Hero Section */}
+            <section className="py-24 text-center bg-gradient-to-b from-white to-blue-50">
+                <h1 className="text-6xl font-bold text-gray-900 mb-4 tracking-tight">
+                    AstroMorphosis
+                </h1>
+                <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                    Exploring biological transformations in space environments through cutting-edge research
+                </p>
+            </section>
 
-            <button
-              onClick={() => document.getElementById("feedback")?.scrollIntoView({ behavior: "smooth" })}
-              className="hover:text-blue-600"
-            >
-              Feedback
-            </button>
-          </nav>
-        </div>
-      </header>
-
-      {/* Website Title */}
-      <section className="py-16 text-center">
-        <div className="container mx-auto px-6">
-          <h1 className="text-6xl font-bold text-gray-900 mb-4 tracking-tight">
-            AstroMorphosis
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Exploring biological transformations in space environments through cutting-edge research
-          </p>
-        </div>
-      </section>
 
       {/* Topics Section */}
       <section id="topics" className="py-20 container mx-auto px-6">

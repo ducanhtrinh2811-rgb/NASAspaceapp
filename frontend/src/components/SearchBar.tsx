@@ -2,7 +2,11 @@ import { useState } from "react";
 import { Input } from "../components/Input";
 import { useNavigate } from "react-router-dom";
 
-export function SearchBar() {   // ✅ đổi từ TopBar thành SearchBar
+interface SearchBarProps {
+  placeholder?: string;
+}
+
+export function SearchBar({ placeholder = "Search..." }: SearchBarProps) {
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
 
@@ -19,7 +23,7 @@ export function SearchBar() {   // ✅ đổi từ TopBar thành SearchBar
       <form onSubmit={handleSearch} className="flex-1 max-w-lg">
         <Input
           type="text"
-          placeholder="Search..."
+          placeholder={placeholder}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="w-full"

@@ -38,3 +38,12 @@ export const searchDocuments = async (body: SearchRequest): Promise<Document[]> 
         return [];
     }
 }
+
+export interface ResearchDocument {
+  id: string | number;
+  title: string;
+  link: string;
+  summary?: string;
+  authors?: string[];
+  category_id?: number;
+}
