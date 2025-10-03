@@ -6,8 +6,11 @@
     "\\backend\\src\\__pycache__",
     "\\frontend",
     "\\frontend\\src",
+    "\\frontend\\src\\components",
+    "\\frontend\\src\\pages",
+    "\\frontend\\src\\services",
     "\\frontend\\src\\types"
   ],
-  "SelectedNode": "\\frontend\\src\\types\\index.ts",
+  "SelectedNode": "\\frontend\\src\\pages\\Page4.tsx",
   "PreviewInSolutionExplorer": false
 }

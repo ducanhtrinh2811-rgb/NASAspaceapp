@@ -18,6 +18,7 @@ import re
 import html
 import json
 from typing import Dict, Any, List
+from urllib.parse import urljoin
 
 from .embedder import Embedder
 from .sql_db import SqlDB
@@ -118,6 +119,67 @@ def extract_article_content(soup: BeautifulSoup) -> Dict[str, str]:
     return content
 
 
+def extract_pdf_url(soup: BeautifulSoup, base_url: str) -> str:
+    """
+    Tìm và trả về URL PDF từ trang web.
+    """
+    pdf_url = ""
+    
+    # Method 1: Tìm meta tag citation_pdf_url
+    meta_pdf = soup.find("meta", {"name": "citation_pdf_url"})
+    if meta_pdf and meta_pdf.get("content"):
+        pdf_url = meta_pdf["content"]
+        print(f"✅ Found PDF via meta tag: {pdf_url}")
+        return pdf_url
+    
+    # Method 2: Tìm link có text "PDF" hoặc href chứa ".pdf"
+    pdf_links = []
+    
+    # Tìm tất cả các link
+    for link in soup.find_all("a", href=True):
+        href = link.get("href", "")
+        text = link.get_text().strip().lower()
+        
+        # Check if href ends with .pdf
+        if href.endswith(".pdf"):
+            pdf_links.append(href)
+            continue
+        
+        # Check if text contains "pdf" or "download"
+        if any(keyword in text for keyword in ["pdf", "download pdf", "full text pdf"]):
+            if ".pdf" in href or "pdf" in href.lower():
+                pdf_links.append(href)
+    
+    # Method 3: Tìm button/link download
+    download_selectors = [
+        {"name": "a", "class_": re.compile(r"pdf|download", re.I)},
+        {"name": "a", "attrs": {"id": re.compile(r"pdf|download", re.I)}},
+    ]
+    
+    for selector in download_selectors:
+        link = soup.find(**selector)
+        if link and link.get("href"):
+            href = link["href"]
+            if ".pdf" in href.lower():
+                pdf_links.append(href)
+    
+    # Chọn PDF link đầu tiên
+    if pdf_links:
+        pdf_url = pdf_links[0]
+        
+        # Convert relative URL to absolute URL
+        if pdf_url.startswith("/"):
+            pdf_url = urljoin(base_url, pdf_url)
+        elif not pdf_url.startswith("http"):
+            pdf_url = urljoin(base_url, pdf_url)
+        
+        print(f"✅ Found PDF URL: {pdf_url}")
+        return pdf_url
+    
+    print("⚠️ No PDF URL found")
+    return ""
+
+
 def summarize_with_ollama_json(text: str, model: str = "gemma:7b") -> Dict[str, str]:
     """
     Summarize with Ollama and force JSON structured output with detailed subsections.
@@ -165,7 +227,7 @@ ARTICLE TEXT:
 Return ONLY the JSON object, nothing else:"""
 
     try:
-        print(f"🔄 Calling Ollama with {len(text)} chars...")
+        print(f"📄 Calling Ollama with {len(text)} chars...")
         res = requests.post(
             "http://host.docker.internal:11434/api/generate",
             json={
@@ -391,6 +453,7 @@ def search_documents(body: SearchRequest):
 def get_article_content(url: str = Query(...)):
     """
     Crawl bài báo và trả về tóm tắt có cấu trúc với subsections (dùng cho Page4).
+    Bao gồm cả PDF URL nếu có.
     """
     try:
         print(f"\n🌐 Fetching URL: {url}")
@@ -434,6 +497,9 @@ def get_article_content(url: str = Query(...)):
         
         print(f"👥 Authors found: {len(authors)}")
 
+        # Trích xuất PDF URL
+        pdf_url = extract_pdf_url(soup, url)
+
         # Trích xuất nội dung
         content = extract_article_content(soup)
         
@@ -441,6 +507,7 @@ def get_article_content(url: str = Query(...)):
         print(f"   - Abstract: {len(content['abstract'])} chars")
         print(f"   - Body: {len(content['body'])} chars")
         print(f"   - Full: {len(content['full_text'])} chars")
+        print(f"   - PDF URL: {pdf_url if pdf_url else 'Not found'}")
         
         if len(content['full_text']) < 200:
             print("⚠️ Warning: Very short content extracted")
@@ -453,7 +520,8 @@ def get_article_content(url: str = Query(...)):
             "data": {
                 "title": html.unescape(title),
                 "authors": authors[:15],  # Limit authors
-                "summary": summary
+                "summary": summary,
+                "pdf_url": pdf_url  # Thêm PDF URL vào response
             }
         }
         

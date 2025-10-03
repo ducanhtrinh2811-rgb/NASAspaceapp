@@ -73,7 +73,13 @@ export async function getArticleSummary(url: string): Promise<ArticleSummary> {
             }
         }
 
+        // Validate pdf_url (optional field)
+        if (!data.pdf_url) {
+            data.pdf_url = "";
+        }
+
         console.log("✅ Article data validated");
+        console.log("📄 PDF URL:", data.pdf_url || "Not available");
 
         return data as ArticleSummary;
 

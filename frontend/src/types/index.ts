@@ -31,12 +31,13 @@ export interface ArticleSummary {
     title: string;
     authors: string[];
     summary: {
-        Background?: string;
-        KeyFindings?: string;
-        Methodology?: string;
-        EthicalConsiderations?: string;
-        Implications?: string;
-        AdditionalNotes?: string;
-        Conclusion?: string;
+        Background: string;
+        KeyFindings: string;
+        Methodology: string;
+        EthicalConsiderations: string;
+        Implications: string;
+        AdditionalNotes: string;
+        Conclusion: string;
     };
+    pdf_url?: string; // Optional PDF download link
 }
