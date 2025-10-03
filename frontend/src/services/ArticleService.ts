@@ -1,21 +1,99 @@
-export async function fetchArticleContent(url: string) {
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0",
-      "Accept": "text/html",
-    },
-  });
-  if (!res.ok) throw new Error("Failed to fetch article");
-  const text = await res.text();
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(text, "text/html");
+﻿// src/services/ArticleService.ts
+import type { ArticleSummary } from "../types";
 
-  const main = doc.querySelector("main#main-content");
-  const styleTags = Array.from(doc.querySelectorAll("style"));
-  const css = styleTags.map(s => s.innerHTML).join("\n");
+const API_BASE_URL = "http://localhost:8000";
 
-  return {
-    html: main?.innerHTML || "",
-    css,
-  };
+export async function getArticleSummary(url: string): Promise<ArticleSummary> {
+    try {
+        console.log("📡 Fetching article summary for:", url);
+
+        const response = await fetch(
+            `${API_BASE_URL}/article_content?url=${encodeURIComponent(url)}`,
+            {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        console.log("📦 API Response:", result);
+
+        if (result.status === "error") {
+            throw new Error(result.error || "Failed to fetch article");
+        }
+
+        if (!result.data) {
+            throw new Error("No data returned from API");
+        }
+
+        // Validate response structure
+        const data = result.data;
+
+        if (!data.title) {
+            data.title = "Untitled Article";
+        }
+
+        if (!data.authors || !Array.isArray(data.authors)) {
+            data.authors = [];
+        }
+
+        if (!data.summary || typeof data.summary !== "object") {
+            data.summary = {
+                Background: "",
+                KeyFindings: "",
+                Methodology: "",
+                EthicalConsiderations: "",
+                Implications: "",
+                AdditionalNotes: "",
+                Conclusion: "",
+            };
+        }
+
+        // Ensure all required summary keys exist
+        const requiredKeys = [
+            "Background",
+            "KeyFindings",
+            "Methodology",
+            "EthicalConsiderations",
+            "Implications",
+            "AdditionalNotes",
+            "Conclusion",
+        ];
+
+        for (const key of requiredKeys) {
+            if (!(key in data.summary)) {
+                data.summary[key] = "";
+            }
+        }
+
+        console.log("✅ Article data validated");
+
+        return data as ArticleSummary;
+
+    } catch (error) {
+        console.error("❌ Error in getArticleSummary:", error);
+
+        if (error instanceof Error) {
+            throw error;
+        }
+
+        throw new Error("Unknown error occurred while fetching article");
+    }
+}
+
+// Optional: Function to check backend health
+export async function checkBackendHealth(): Promise<boolean> {
+    try {
+        const response = await fetch(`${API_BASE_URL}/categories`);
+        return response.ok;
+    } catch {
+        return false;
+    }
 }

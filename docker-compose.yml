@@ -1,4 +1,4 @@
-services:
+﻿services:
   backend:
     container_name: prj-backend
     build: ./backend
@@ -10,6 +10,8 @@ services:
       - weaviate
       - postgres
     restart: unless-stopped
+    extra_hosts:                # ⚡️ Thêm dòng này
+      - "host.docker.internal:host-gateway"  # Cho phép backend gọi ra Windows host
 
   frontend:
     build: ./frontend

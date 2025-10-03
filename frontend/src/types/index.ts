@@ -1,4 +1,4 @@
-export interface Category {
+﻿export interface Category {
     id: number;
     name: string;
 }
@@ -26,8 +26,17 @@ export interface SearchRequest {
     limit: number;
 }
 
-export interface ArticleData {
-    html: string;
-    style: string;
-    links: string[];
+// ✅ Article summary với cấu trúc JSON từ Backend
+export interface ArticleSummary {
+    title: string;
+    authors: string[];
+    summary: {
+        Background?: string;
+        KeyFindings?: string;
+        Methodology?: string;
+        EthicalConsiderations?: string;
+        Implications?: string;
+        AdditionalNotes?: string;
+        Conclusion?: string;
+    };
 }

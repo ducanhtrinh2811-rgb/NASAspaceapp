@@ -1,0 +1,13 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\backend",
+    "\\backend\\src",
+    "\\backend\\src\\__pycache__",
+    "\\frontend",
+    "\\frontend\\src",
+    "\\frontend\\src\\types"
+  ],
+  "SelectedNode": "\\frontend\\src\\types\\index.ts",
+  "PreviewInSolutionExplorer": false
+}
