@@ -8,6 +8,7 @@ import { BackToTopButton } from "../components/BackToTopButton";
 import { ArrowLeft, FileText, Users, AlertCircle, ExternalLink } from "lucide-react";
 import type { ArticleSummary } from "../types";
 import { getArticleSummary } from "../services/ArticleService";
+import { ArticleChatbox } from "../components/ArticleChatbox";
 
 // ✅ Parse content với regex an toàn hơn
 function parseContentSections(content: string): { heading: string; items: string[] }[] {
@@ -310,6 +311,9 @@ export default function Page4() {
                 </div>
             </header>
 
+
+
+
             {/* Main Content with Sidebar */}
             <div className="container mx-auto px-6 py-8 max-w-7xl">
                 <div className="flex gap-8">
@@ -426,6 +430,12 @@ export default function Page4() {
                         </div>
                     </aside>
                 </div>
+                {article && (
+    <ArticleChatbox
+        articleTitle={article.title}
+        articleContent={JSON.stringify(article.summary)}
+    />
+)}
             </div>
 
             <Footer />

@@ -5,7 +5,7 @@ weaviate:
   collection_name: doc
 
 ingestion:
-  run: True
+  run: False
   path: data/data.csv
 
 embedders:

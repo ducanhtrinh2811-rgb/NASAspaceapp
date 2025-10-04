@@ -544,3 +544,55 @@ def get_article_content_smart(url: str = Query(...)):
     Alias for /article_content
     """
     return get_article_content(url)
+
+class ChatRequest(BaseModel):
+    question: str
+    article_title: str
+    article_context: str
+
+@app.post("/chat_article")
+def chat_article(body: ChatRequest):
+    """
+    Chat endpoint để trả lời câu hỏi về bài báo.
+    """
+    try:
+        print(f"\n💬 Chat question: {body.question[:100]}...")
+        
+        # Tạo context từ article
+        context = f"""Article Title: {body.article_title}
+
+Article Content Summary:
+{body.article_context[:3000]}
+
+User Question: {body.question}
+
+Please provide a clear, concise answer based on the article content above. If the information is not available in the article, say so."""
+
+        # Gọi Ollama
+        res = requests.post(
+            "http://host.docker.internal:11434/api/generate",
+            json={
+                "model": "gemma:7b",
+                "prompt": context,
+                "stream": False,
+                "options": {
+                    "temperature": 0.5,
+                    "num_predict": 500,
+                }
+            },
+            timeout=60,
+        )
+        
+        if res.status_code != 200:
+            return {"status": "error", "answer": "Failed to get response from AI"}
+        
+        answer = res.json().get("response", "").strip()
+        
+        return {
+            "status": "success",
+            "answer": answer
+        }
+        
+    except Exception as e:
+        print(f"❌ Chat error: {e}")
+        return {"status": "error", "answer": f"Error: {str(e)}"}
