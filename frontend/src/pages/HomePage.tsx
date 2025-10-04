@@ -42,7 +42,7 @@ export default function HomePage() {
                         <span className="text-xl font-bold text-blue-600">NASA Space Apps Challenge</span>
                     </div>
                     {/* SearchBar ở giữa */}
-                    <SearchBar className="mx-8 flex-1" placeholder="Search articles..." />
+                    <SearchBar className="mx-8 flex-1" placeholder="Search ..." />
                     <button
                         type="submit"
                         className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-blue-600"

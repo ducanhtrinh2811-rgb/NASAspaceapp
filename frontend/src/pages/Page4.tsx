@@ -210,7 +210,7 @@ export default function Page4() {
                 <div className="text-center">
                     <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600 mx-auto mb-4"></div>
                     <p className="text-gray-600 text-lg font-medium">Analyzing article...</p>
-                    <p className="text-gray-500 text-sm mt-2">This may take 30-60 seconds</p>
+                    <p className="text-gray-500 text-sm mt-2">This may take a few minutes</p>
                 </div>
             </div>
         );
@@ -305,7 +305,7 @@ export default function Page4() {
                         <ArrowLeft className="w-5 h-5" />
                         <span>Back</span>
                     </button>
-                    <SearchBar placeholder="Search in article..." />
+                    <SearchBar placeholder="Search ..." />
                     <Navigation />
                 </div>
             </header>

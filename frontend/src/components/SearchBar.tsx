@@ -10,7 +10,7 @@ interface SearchBarProps {
 }
 
 export function SearchBar({
-    placeholder = "Search documents...",
+    placeholder = "Search",
     className = "",
     variant = "default",
 }: SearchBarProps) {

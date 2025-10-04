@@ -88,7 +88,7 @@ export default function TopicPage() {
                                 className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors"
                             >
                                 <ArrowLeft className="w-5 h-5" />
-                                <span> Neromind </span>
+                                <span> Back </span>
                             </Link>
                             <span className="text-gray-400"> </span>
                             <button
@@ -99,7 +99,7 @@ export default function TopicPage() {
                             </button>
                         </div>
 
-                        <SearchBar placeholder="Search documents..." />
+                        <SearchBar placeholder="Search ..." />
                         <Navigation />
                     </div>
                 </div>
