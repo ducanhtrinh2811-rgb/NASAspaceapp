@@ -17,14 +17,15 @@ export default function HomePage() {
     //     }
     // };
 
-    const topics = [
-        { id: 1, key: "vertebrate", name: "Vertebrate", emoji: "🦴" },
-        { id: 2, key: "plants", name: "Plants", emoji: "🌱" },
-        { id: 3, key: "microbes", name: "Microbes", emoji: "🦠" },
-        { id: 4, key: "fungi", name: "Fungi", emoji: "🍄" },
-        { id: 5, key: "human-cell", name: "Human Cell & Biomedical", emoji: "🧪" },
-        { id: 6, key: "systems-biology", name: "Systems Biology & Tools", emoji: "💻" },
-    ];
+const topics = [
+  { id: 1, key: "vertebrate", name: "Vertebrate", image: "/images/Vertebrate.png" },
+  { id: 2, key: "plants", name: "Plants", image: "/images/Plants.png" },
+  { id: 3, key: "microbes", name: "Microbes", image: "/images/Microbes.png" },
+  { id: 4, key: "fungi", name: "Fungi", image: "/images/Fungi.png" },
+  { id: 5, key: "human-cell", name: "Human Cell & Biomedical", image: "/images/Humancells.png" },
+  { id: 6, key: "systems-biology", name: "Systems Biology & Tools", image: "/images/Systems.png" },
+];
+
 
     return (
         <div className="min-h-screen flex flex-col relative">
@@ -68,24 +69,30 @@ export default function HomePage() {
                             </button>
 
                             {showTopics && (
-                                <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200">
-                                    <ul className="py-2">
-                                        {topics.map((topic) => (
-                                            <li
-                                                key={topic.id}
-                                                onClick={() => {
-                                                    navigate(`/topic/${topic.id}`);
-                                                    setShowTopics(false);
-                                                }}
-                                                className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex items-center space-x-2"
-                                            >
-                                                <span>{topic.emoji}</span>
-                                                <span>{topic.name}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
+                            <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200">
+                                <ul className="py-2">
+                                {topics.map((topic) => (
+                                    <li
+                                    key={topic.id}
+                                    onClick={() => {
+                                        navigate(`/topic/${topic.id}`);
+                                        setShowTopics(false);
+                                    }}
+                                    className="px-4 py-2 hover:bg-blue-50 cursor-pointer flex items-center space-x-2"
+                                    >
+                                    {/* ✅ dùng ảnh thay vì emoji */}
+                                    <img
+                                        src={topic.image}
+                                        alt={topic.name}
+                                        className="h-6 w-6 object-contain"
+                                    />
+                                    <span>{topic.name}</span>
+                                    </li>
+                                ))}
+                                </ul>
+                            </div>
                             )}
+
                         </div>
 
 
@@ -140,7 +147,11 @@ export default function HomePage() {
                             onClick={() => navigate(`/topic/${topic.id}`)}
                             className="cursor-pointer bg-white p-8 rounded-2xl shadow-lg flex flex-col items-center hover:scale-105 transition"
                         >
-                            <div className="text-5xl mb-4">{topic.emoji}</div>
+                        <img 
+                            src={topic.image} 
+                            alt={topic.name} 
+                        className="h-20 w-20 object-contain mb-4"
+                        />
                             <h3 className="text-lg font-bold text-gray-800">{topic.name}</h3>
                         </div>
                     ))}
