@@ -1,6 +1,9 @@
 ﻿from .config import POSTGRES_CONFIG
 from sqlalchemy import create_engine, inspect, func
 from sqlalchemy.orm import sessionmaker
+# backend/src/sql_db.py
+from sqlalchemy import create_engine, inspect, func
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 from .models import Base, Category, Keyword, Document
 from typing import List
@@ -8,16 +11,15 @@ from typing import List
 class SqlDB:
     def __init__(self):
         try:
-            self.engine = create_engine(
-                f"postgresql+psycopg2://{POSTGRES_CONFIG['user']}:{POSTGRES_CONFIG['password']}"
-                f"@{POSTGRES_CONFIG['host']}:{POSTGRES_CONFIG['port']}/{POSTGRES_CONFIG['dbname']}",
-                echo=False
-            )
+            # ✅ Dùng SQLite file local, không cần Postgres
+            self.engine = create_engine("sqlite:///./data.db", echo=False, connect_args={"check_same_thread": False})
             self.SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=self.engine)
+
             inspector = inspect(self.engine)
             if not inspector.get_table_names():
                 Base.metadata.create_all(bind=self.engine)
-    
+                print("[INFO] SQLite database created successfully ✅")
+
         except SQLAlchemyError as e:
             raise RuntimeError(f"Cannot connect to database: {e}")
             

@@ -2,15 +2,10 @@
   "ExpandedNodes": [
     "",
     "\\backend",
-    "\\backend\\src",
-    "\\backend\\src\\__pycache__",
-    "\\frontend",
-    "\\frontend\\src",
-    "\\frontend\\src\\components",
-    "\\frontend\\src\\pages",
-    "\\frontend\\src\\services",
-    "\\frontend\\src\\types"
+    "\\backend\\config",
+    "\\backend\\data",
+    "\\backend\\src"
   ],
-  "SelectedNode": "\\backend\\src\\main.py",
+  "SelectedNode": "\\.env.example",
   "PreviewInSolutionExplorer": false
 }

@@ -1,8 +1,8 @@
-weaviate:
-  host: ${WEAVIATE_HOST}
-  port: ${WEAVIATE_PORT}
-  grpc_port: ${WEAVIATE_GRPC_PORT}
-  collection_name: doc
+﻿weaviate:
+  host: weaviate
+  port: 8080
+  grpc_port: 50051
+  collection_name: documents
 
 ingestion:
   run: False

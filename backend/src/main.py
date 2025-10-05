@@ -11,12 +11,15 @@ if INGESTION_CONFIG.get("run"):
 
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from bs4 import BeautifulSoup
 from pydantic import BaseModel
 import requests
 import re
 import html
 import json
+import os
 from typing import Dict, Any, List
 from urllib.parse import urljoin
 
@@ -31,7 +34,7 @@ vectorstore = WeaviateVectorStore()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:5173"],
+    allow_origins=["http://localhost:3000", "http://localhost:5173", "*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -45,9 +48,7 @@ def clean_text(s: str) -> str:
 
 
 def extract_article_content(soup: BeautifulSoup) -> Dict[str, str]:
-    """
-    Trích xuất nội dung bài báo khoa học một cách thông minh.
-    """
+    """Trích xuất nội dung bài báo"""
     content = {
         "abstract": "",
         "body": "",
@@ -66,10 +67,9 @@ def extract_article_content(soup: BeautifulSoup) -> Dict[str, str]:
         abstract_tag = soup.find(**selector)
         if abstract_tag:
             content["abstract"] = clean_text(abstract_tag.get_text(" ", strip=True))
-            if len(content["abstract"]) > 100:  # Đủ dài mới chấp nhận
+            if len(content["abstract"]) > 100:
                 break
     
-    # Nếu không tìm thấy, tìm meta description
     if not content["abstract"]:
         meta_abstract = soup.find("meta", {"name": "description"}) or \
                        soup.find("meta", {"property": "og:description"})
@@ -88,16 +88,14 @@ def extract_article_content(soup: BeautifulSoup) -> Dict[str, str]:
     for selector in body_selectors:
         body_tag = soup.find(**selector)
         if body_tag:
-            # Loại bỏ các thẻ không cần thiết
             for unwanted in body_tag.find_all(["script", "style", "nav", "header", "footer", "aside"]):
                 unwanted.decompose()
             
             body_text = clean_text(body_tag.get_text(" ", strip=True))
-            if len(body_text) > 500:  # Đủ dài mới chấp nhận
+            if len(body_text) > 500:
                 content["body"] = body_text
                 break
     
-    # Fallback: lấy toàn bộ body
     if not content["body"]:
         body_tag = soup.find("body")
         if body_tag:
@@ -110,7 +108,6 @@ def extract_article_content(soup: BeautifulSoup) -> Dict[str, str]:
     if content["abstract"]:
         parts.append(f"ABSTRACT:\n{content['abstract']}")
     if content["body"]:
-        # Giới hạn body để tránh quá dài
         body_limited = content["body"][:8000]
         parts.append(f"\nFULL TEXT:\n{body_limited}")
     
@@ -120,195 +117,112 @@ def extract_article_content(soup: BeautifulSoup) -> Dict[str, str]:
 
 
 def extract_pdf_url(soup: BeautifulSoup, base_url: str) -> str:
-    """
-    Tìm và trả về URL PDF từ trang web.
-    """
+    """Tìm URL PDF"""
     pdf_url = ""
     
-    # Method 1: Tìm meta tag citation_pdf_url
     meta_pdf = soup.find("meta", {"name": "citation_pdf_url"})
     if meta_pdf and meta_pdf.get("content"):
-        pdf_url = meta_pdf["content"]
-        print(f"✅ Found PDF via meta tag: {pdf_url}")
-        return pdf_url
+        return meta_pdf["content"]
     
-    # Method 2: Tìm link có text "PDF" hoặc href chứa ".pdf"
     pdf_links = []
-    
-    # Tìm tất cả các link
     for link in soup.find_all("a", href=True):
         href = link.get("href", "")
         text = link.get_text().strip().lower()
         
-        # Check if href ends with .pdf
         if href.endswith(".pdf"):
             pdf_links.append(href)
             continue
         
-        # Check if text contains "pdf" or "download"
         if any(keyword in text for keyword in ["pdf", "download pdf", "full text pdf"]):
             if ".pdf" in href or "pdf" in href.lower():
                 pdf_links.append(href)
     
-    # Method 3: Tìm button/link download
-    download_selectors = [
-        {"name": "a", "class_": re.compile(r"pdf|download", re.I)},
-        {"name": "a", "attrs": {"id": re.compile(r"pdf|download", re.I)}},
-    ]
-    
-    for selector in download_selectors:
-        link = soup.find(**selector)
-        if link and link.get("href"):
-            href = link["href"]
-            if ".pdf" in href.lower():
-                pdf_links.append(href)
-    
-    # Chọn PDF link đầu tiên
     if pdf_links:
         pdf_url = pdf_links[0]
-        
-        # Convert relative URL to absolute URL
         if pdf_url.startswith("/"):
             pdf_url = urljoin(base_url, pdf_url)
         elif not pdf_url.startswith("http"):
             pdf_url = urljoin(base_url, pdf_url)
-        
-        print(f"✅ Found PDF URL: {pdf_url}")
-        return pdf_url
     
-    print("⚠️ No PDF URL found")
-    return ""
+    return pdf_url
 
 
-def summarize_with_ollama_json(text: str, model: str = "gemma:7b") -> Dict[str, str]:
-    """
-    Summarize with Ollama and force JSON structured output with detailed subsections.
-    """
+def summarize_with_groq(text: str) -> Dict[str, str]:
+    """Summarize với Groq API"""
     text = clean_text(text)
     if not text:
         return create_empty_summary()
 
-    # Giới hạn độ dài text
     if len(text) > 10000:
         text = text[:10000] + "..."
 
-    prompt = f"""You are an expert scientific article summarizer. Analyze the following scientific article and create a structured JSON summary.
+    GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+    
+    if not GROQ_API_KEY:
+        print("GROQ_API_KEY not found, using fallback")
+        return create_fallback_summary(text)
 
-CRITICAL FORMATTING RULES:
-1. Return ONLY valid JSON - no markdown, no explanations, just pure JSON
-2. Each section must use this exact format with subsections:
-   - Start with descriptive subheading: **SubheadingName**
-   - Follow with bullet points: - Point text here
-   - Separate subsections with blank line
+    prompt = f"""You are an expert scientific article summarizer. Return ONLY valid JSON with these exact keys:
+{{"Background": "**Context**\\n- Point 1\\n- Point 2", "KeyFindings": "**Results**\\n- Finding 1", "Methodology": "**Design**\\n- Method detail", "EthicalConsiderations": "", "Implications": "**Impact**\\n- Implication", "AdditionalNotes": "", "Conclusion": "**Summary**\\n- Key point"}}
 
-3. Required JSON structure (all keys must exist):
-{{
-  "Background": "**Context**\\n- First point\\n- Second point\\n\\n**Objectives**\\n- Point here",
-  "KeyFindings": "**Main Results**\\n- Finding 1\\n- Finding 2",
-  "Methodology": "**Study Design**\\n- Design detail\\n\\n**Procedures**\\n- Procedure detail",
-  "EthicalConsiderations": "**Ethical Aspects**\\n- Point if available, empty string if none",
-  "Implications": "**Clinical Implications**\\n- Implication point",
-  "AdditionalNotes": "**Limitations**\\n- Point if any, empty string if none",
-  "Conclusion": "**Key Takeaways**\\n- Conclusion point"
-}}
-
-CONTENT GUIDELINES:
-- Background: Context, previous research, study objectives
-- KeyFindings: Main results and discoveries (be specific with numbers/data if available)
-- Methodology: Study design, sample size, procedures, analysis methods
-- EthicalConsiderations: IRB approval, consent, animal welfare (leave empty if not mentioned)
-- Implications: Clinical/practical implications, significance
-- AdditionalNotes: Limitations, future research, funding (leave empty if not mentioned)
-- Conclusion: Main takeaways and final remarks
-
-ARTICLE TEXT:
-{text}
-
-Return ONLY the JSON object, nothing else:"""
+Article: {text}"""
 
     try:
-        print(f"📄 Calling Ollama with {len(text)} chars...")
         res = requests.post(
-            "http://host.docker.internal:11434/api/generate",
-            json={
-                "model": model,
-                "prompt": prompt,
-                "stream": False,
-                "options": {
-                    "temperature": 0.3,
-                    "num_predict": 2000,
-                }
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json"
             },
-            timeout=180,
+            json={
+                "model": "gemma-7b-it",
+                "messages": [
+                    {"role": "system", "content": "Return only valid JSON."},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.3,
+                "max_tokens": 2000,
+            },
+            timeout=60,
         )
         
         if res.status_code != 200:
-            print(f"❌ Ollama API error: {res.status_code}")
             return create_fallback_summary(text)
         
-        raw = res.json().get("response", "").strip()
-        print(f"📝 Ollama raw response length: {len(raw)} chars")
+        raw = res.json()["choices"][0]["message"]["content"].strip()
         
-        # Clean response
-        raw = raw.strip()
-        
-        # Remove markdown code blocks if present
         if raw.startswith("```"):
             raw = re.sub(r'^```(?:json)?\s*', '', raw)
             raw = re.sub(r'\s*```$', '', raw)
         
-        # Try to extract JSON
         json_match = re.search(r'\{[\s\S]*\}', raw)
         if json_match:
-            try:
-                summary_json = json.loads(json_match.group())
-                print("✅ Successfully parsed JSON from Ollama")
-                
-                # Validate and format
-                summary_json = validate_and_format_summary(summary_json)
-                return summary_json
-                
-            except json.JSONDecodeError as e:
-                print(f"❌ JSON parse error: {e}")
-                print(f"Raw response preview: {raw[:200]}...")
-                return create_fallback_summary(text)
-        else:
-            print("❌ No JSON found in response")
-            return create_fallback_summary(text)
-
-    except requests.Timeout:
-        print("❌ Ollama timeout")
+            summary_json = json.loads(json_match.group())
+            return validate_and_format_summary(summary_json)
+        
         return create_fallback_summary(text)
+
     except Exception as e:
-        print(f"❌ Ollama API error: {e}")
+        print(f"Groq error: {e}")
         return create_fallback_summary(text)
 
 
 def validate_and_format_summary(summary: Dict[str, Any]) -> Dict[str, str]:
-    """
-    Đảm bảo summary có đủ các keys và format đúng.
-    """
+    """Validate summary format"""
     required_keys = [
-        "Background",
-        "KeyFindings",
-        "Methodology",
-        "EthicalConsiderations",
-        "Implications",
-        "AdditionalNotes",
-        "Conclusion",
+        "Background", "KeyFindings", "Methodology", 
+        "EthicalConsiderations", "Implications", 
+        "AdditionalNotes", "Conclusion"
     ]
     
     result = {}
     for key in required_keys:
         val = summary.get(key, "")
-        
-        # Convert list to string format
         if isinstance(val, list):
             val = format_list_as_subsections(val, key)
         elif not isinstance(val, str):
             val = str(val) if val else ""
         
-        # Ensure has subsection format if not empty
         if val and "**" not in val and len(val) > 20:
             val = auto_format_subsection(val, key)
         
@@ -318,19 +232,14 @@ def validate_and_format_summary(summary: Dict[str, Any]) -> Dict[str, str]:
 
 
 def auto_format_subsection(text: str, section_name: str) -> str:
-    """
-    Tự động format text thành subsection với heading.
-    """
+    """Auto format text"""
     if not text:
         return ""
     
-    # Split into sentences
     sentences = [s.strip() + "." for s in text.split('.') if s.strip()]
-    
     if not sentences:
         return text
     
-    # Create formatted output
     heading_map = {
         "Background": "Study Context",
         "KeyFindings": "Main Results",
@@ -342,16 +251,14 @@ def auto_format_subsection(text: str, section_name: str) -> str:
     heading = heading_map.get(section_name, "Overview")
     result = f"**{heading}**\n"
     
-    for sentence in sentences[:5]:  # Limit to 5 sentences
+    for sentence in sentences[:5]:
         result += f"- {sentence}\n"
     
     return result.strip()
 
 
 def format_list_as_subsections(items: List, section_name: str) -> str:
-    """
-    Format a list into subsections with bullet points.
-    """
+    """Format list"""
     if not items:
         return ""
     
@@ -372,9 +279,7 @@ def format_list_as_subsections(items: List, section_name: str) -> str:
 
 
 def create_empty_summary() -> Dict[str, str]:
-    """
-    Tạo summary rỗng với đúng format.
-    """
+    """Empty summary"""
     return {
         "Background": "",
         "KeyFindings": "",
@@ -387,12 +292,7 @@ def create_empty_summary() -> Dict[str, str]:
 
 
 def create_fallback_summary(text: str) -> Dict[str, str]:
-    """
-    Tạo summary fallback từ text gốc khi Ollama thất bại.
-    """
-    print("⚠️ Creating fallback summary from raw text")
-    
-    # Tách abstract và body nếu có
+    """Fallback summary"""
     parts = text.split("FULL TEXT:")
     abstract = ""
     body = ""
@@ -403,21 +303,19 @@ def create_fallback_summary(text: str) -> Dict[str, str]:
     else:
         body = text
     
-    # Tạo Background từ abstract hoặc phần đầu
     background_text = abstract if abstract else body[:800]
     background = auto_format_subsection(background_text, "Background")
     
-    # Tạo KeyFindings từ body
     body_preview = body[:600] if body else ""
     findings = auto_format_subsection(body_preview, "KeyFindings") if body_preview else ""
     
     return {
         "Background": background,
         "KeyFindings": findings,
-        "Methodology": "**Note**\n- Full analysis unavailable. Please check the original article.",
+        "Methodology": "**Note**\n- Full analysis unavailable.",
         "EthicalConsiderations": "",
         "Implications": "",
-        "AdditionalNotes": "**Important**\n- This is an automated summary. Some details may be incomplete.",
+        "AdditionalNotes": "**Important**\n- Automated summary.",
         "Conclusion": "",
     }
 
@@ -451,12 +349,9 @@ def search_documents(body: SearchRequest):
 
 @app.get("/article_content")
 def get_article_content(url: str = Query(...)):
-    """
-    Crawl bài báo và trả về tóm tắt có cấu trúc với subsections (dùng cho Page4).
-    Bao gồm cả PDF URL nếu có.
-    """
+    """Crawl article and return summary"""
     try:
-        print(f"\n🌐 Fetching URL: {url}")
+        print(f"\nFetching URL: {url}")
         
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
@@ -464,11 +359,9 @@ def get_article_content(url: str = Query(...)):
         resp = requests.get(url, headers=headers, timeout=20)
         resp.raise_for_status()
         
-        print(f"✅ HTTP {resp.status_code} - Content length: {len(resp.text)}")
-        
         soup = BeautifulSoup(resp.text, "html.parser")
 
-        # Lấy tiêu đề
+        # Get title
         title = ""
         title_tag = soup.find("h1") or soup.find("title")
         if title_tag:
@@ -477,122 +370,112 @@ def get_article_content(url: str = Query(...)):
         if not title:
             title = "Article Title Unavailable"
         
-        print(f"📰 Title: {title[:100]}")
-        
-        # Lấy tác giả
+        # Get authors
         authors = []
-        
-        # Method 1: Meta tags
         for meta in soup.find_all("meta", {"name": "citation_author"}):
             if meta.get("content"):
                 authors.append(meta["content"].strip())
         
-        # Method 2: Author tags
         if not authors:
             author_tags = soup.find_all(class_=re.compile(r"author", re.I))
-            for tag in author_tags[:10]:  # Limit to 10
+            for tag in author_tags[:10]:
                 author_text = clean_text(tag.get_text())
                 if author_text and len(author_text) < 100:
                     authors.append(author_text)
-        
-        print(f"👥 Authors found: {len(authors)}")
 
-        # Trích xuất PDF URL
+        # Extract PDF URL
         pdf_url = extract_pdf_url(soup, url)
 
-        # Trích xuất nội dung
+        # Extract content
         content = extract_article_content(soup)
         
-        print(f"📄 Content extracted:")
-        print(f"   - Abstract: {len(content['abstract'])} chars")
-        print(f"   - Body: {len(content['body'])} chars")
-        print(f"   - Full: {len(content['full_text'])} chars")
-        print(f"   - PDF URL: {pdf_url if pdf_url else 'Not found'}")
-        
-        if len(content['full_text']) < 200:
-            print("⚠️ Warning: Very short content extracted")
-        
-        # Tạo tóm tắt CÓ CẤU TRÚC với subsections bằng Ollama
-        summary = summarize_with_ollama_json(content['full_text'])
+        # Summarize with Groq
+        summary = summarize_with_groq(content['full_text'])
 
         return {
             "status": "success",
             "data": {
                 "title": html.unescape(title),
-                "authors": authors[:15],  # Limit authors
+                "authors": authors[:15],
                 "summary": summary,
-                "pdf_url": pdf_url  # Thêm PDF URL vào response
+                "pdf_url": pdf_url
             }
         }
         
     except requests.Timeout:
-        print("❌ Request timeout")
-        return {"status": "error", "error": "Request timeout - URL took too long to respond"}
+        return {"status": "error", "error": "Request timeout"}
     except requests.HTTPError as e:
-        print(f"❌ HTTP Error: {e}")
         return {"status": "error", "error": f"HTTP Error: {str(e)}"}
     except Exception as e:
-        print(f"❌ ERROR in /article_content: {e}")
+        print(f"ERROR: {e}")
         import traceback
         traceback.print_exc()
         return {"status": "error", "error": str(e)}
 
-
-@app.get("/article_content_smart")
-def get_article_content_smart(url: str = Query(...)):
-    """
-    Alias for /article_content
-    """
-    return get_article_content(url)
 
 class ChatRequest(BaseModel):
     question: str
     article_title: str
     article_context: str
 
+
 @app.post("/chat_article")
 def chat_article(body: ChatRequest):
-    """
-    Chat endpoint để trả lời câu hỏi về bài báo.
-    """
+    """Chat with Groq API"""
     try:
-        print(f"\n💬 Chat question: {body.question[:100]}...")
+        GROQ_API_KEY = os.getenv("GROQ_API_KEY")
         
-        # Tạo context từ article
-        context = f"""Article Title: {body.article_title}
+        if not GROQ_API_KEY:
+            return {"status": "error", "answer": "API key not configured"}
+        
+        context = f"""Article: {body.article_title}
 
-Article Content Summary:
-{body.article_context[:3000]}
+Content: {body.article_context[:3000]}
 
-User Question: {body.question}
+Question: {body.question}
 
-Please provide a clear, concise answer based on the article content above. If the information is not available in the article, say so."""
+Answer based on the article."""
 
-        # Gọi Ollama
         res = requests.post(
-            "http://host.docker.internal:11434/api/generate",
-            json={
-                "model": "gemma:7b",
-                "prompt": context,
-                "stream": False,
-                "options": {
-                    "temperature": 0.5,
-                    "num_predict": 500,
-                }
+            "https://api.groq.com/openai/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Content-Type": "application/json"
             },
-            timeout=60,
+            json={
+                "model": "gemma-7b-it",
+                "messages": [{"role": "user", "content": context}],
+                "temperature": 0.5,
+                "max_tokens": 500,
+            },
+            timeout=30,
         )
         
         if res.status_code != 200:
-            return {"status": "error", "answer": "Failed to get response from AI"}
+            return {"status": "error", "answer": "AI request failed"}
         
-        answer = res.json().get("response", "").strip()
+        answer = res.json()["choices"][0]["message"]["content"].strip()
         
-        return {
-            "status": "success",
-            "answer": answer
-        }
+        return {"status": "success", "answer": answer}
         
     except Exception as e:
-        print(f"❌ Chat error: {e}")
         return {"status": "error", "answer": f"Error: {str(e)}"}
+
+
+@app.get("/api/hello")
+def hello():
+    return {"message": "Hello from FastAPI!"}
+
+
+# Serve frontend
+frontend_path = os.path.join(os.path.dirname(__file__), "../frontend/dist")
+
+if os.path.exists(frontend_path):
+    app.mount("/assets", StaticFiles(directory=os.path.join(frontend_path, "assets")), name="assets")
+    
+    @app.get("/{full_path:path}")
+    def serve_vue(full_path: str):
+        index_file = os.path.join(frontend_path, "index.html")
+        if os.path.exists(index_file):
+            return FileResponse(index_file)
+        return {"error": "Frontend not found"}

@@ -2,22 +2,46 @@
 import weaviate
 from weaviate.classes.config import Property, DataType, Configure
 from weaviate.classes.query import Filter
+import os
+import time
 
 
 class WeaviateVectorStore:
-    def __init__(self):
-        self.client = weaviate.connect_to_local(
-            host=WEAVIATE_CONFIG['host'],
-            port=WEAVIATE_CONFIG['port'],
-            grpc_port=WEAVIATE_CONFIG['grpc_port']
-        )
+    def __init__(self, max_retries=10, retry_delay=3):
         self.collection_name = WEAVIATE_CONFIG['collection_name']
-
+        self.client = None
+        
+        # Dùng tên service trong Docker, không dùng localhost
+        host = os.getenv('WEAVIATE_HOST', 'weaviate')
+        port = int(os.getenv('WEAVIATE_PORT', 8080))
+        grpc_port = int(os.getenv('WEAVIATE_GRPC_PORT', 50051))
+        
+        for attempt in range(max_retries):
+            try:
+                print(f"[INFO] Connecting to Weaviate at {host}:{port} (attempt {attempt + 1}/{max_retries})...")
+                
+                self.client = weaviate.connect_to_local(
+                    host=host,
+                    port=port,
+                    grpc_port=grpc_port
+                )
+                
+                self.client.is_ready()
+                print(f"[SUCCESS] Connected to Weaviate at {host}:{port}!")
+                break
+                
+            except Exception as e:
+                print(f"[WARNING] Attempt {attempt + 1} failed: {str(e)[:100]}")
+                if attempt < max_retries - 1:
+                    print(f"[INFO] Retrying in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                else:
+                    raise Exception(f"Cannot connect to Weaviate at {host}:{port} after {max_retries} attempts")
+        
         if not self.client.collections.exists(self.collection_name):
             self._create_collection()
         
         self.collection = self.client.collections.get(self.collection_name)
-
     def _create_collection(self):
         """Tạo collection với schema"""
         self.client.collections.create(
